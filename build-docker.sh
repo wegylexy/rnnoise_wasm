@@ -1,0 +1,1 @@
+docker run --rm -v ${PWD}:/tmp -w /tmp emscripten/emsdk bash build.sh
