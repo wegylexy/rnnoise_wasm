@@ -1,1 +1,4 @@
 theme: jekyll-theme-cayman
+title: RNNoise for WASM
+description: An alternative noise suppression for Web Audio
+show_downloads: true
