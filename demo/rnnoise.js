@@ -1,4 +1,4 @@
-if (navigator.mediaDevices && (globalThis.AudioWorkletNode || globalThis.ScriptProcessorNode)) {
+if (navigator.mediaDevices && (window.AudioWorkletNode || window.ScriptProcessorNode)) {
     switch (location.protocol) {
         case "http:":
         case "https:":
