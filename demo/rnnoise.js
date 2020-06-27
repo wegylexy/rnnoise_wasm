@@ -39,15 +39,13 @@ if (navigator.mediaDevices && (globalThis.AudioWorkletNode || globalThis.ScriptP
                             rnnoise = new RNNoiseNode(context);
                         rnnoise.connect(context.destination);
                         source.connect(rnnoise);
-                        if (rnnoise.port) {
-                            rnnoise.port.onmessage = ({ data }) => { vadProb.value = data.vadProb; };
-                            (function a() {
-                                requestAnimationFrame(() => {
-                                    rnnoise.port.postMessage({});
-                                    a();
-                                });
-                            })();
-                        }
+                        rnnoise.onstatus = data => { vadProb.value = data.vadProb; };
+                        (function a() {
+                            requestAnimationFrame(() => {
+                                rnnoise.update();
+                                a();
+                            });
+                        })();
                     } catch (e) {
                         context.close();
                         console.error(e);

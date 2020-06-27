@@ -1,9 +1,9 @@
 (function () {
     const base = document.currentScript.src.match(/(.*\/)?/)[0],
         compilation = WebAssembly.compileStreaming(fetch(base + "rnnoise-processor.wasm"));
-
+    let node;
     if (globalThis.AudioWorkletNode) {
-        globalThis.RNNoiseNode = class extends AudioWorkletNode {
+        node = class extends AudioWorkletNode {
             static async register(context) {
                 if (!context.RNNoiseModule) {
                     context.RNNoiseModule = await compilation;
@@ -23,11 +23,19 @@
                         module: context.RNNoiseModule
                     }
                 });
+                this.port.onmessage = ({ data }) => {
+                    const e = Object.assign(new Event("status"), data);
+                    this.dispatchEvent(e);
+                    if (this.onstatus)
+                        this.onstatus(e);
+                };
             }
+
+            update() { this.port.postMessage({}); }
         };
     } else if (globalThis.ScriptProcessorNode) {
-        globalThis.RNNoiseNode = function (context) {
-            const size = 16384, processor = context.createScriptProcessor(size, 1, 1),
+        node = function (context) {
+            const size = 512, processor = context.createScriptProcessor(size, 1, 1),
                 instance = context.RNNoiseInstance,
                 heapFloat32 = new Float32Array(instance.memory.buffer);
             let input = instance.buffer(0);
@@ -40,9 +48,17 @@
                 if (ptr4)
                     o.set(heapFloat32.subarray(ptr4, ptr4 + o.length));
             };
+            processor.update = () => {
+                const e = Object.assign(new Event("status"), {
+                    vadProb: instance.getVadProb()
+                });
+                processor.dispatchEvent(e);
+                if (processor.onstatus)
+                    processor.onstatus(e);
+            };
             return processor;
         };
-        globalThis.RNNoiseNode.register = async (context) => {
+        node.register = async (context) => {
             if (!context.RNNoiseInstance) {
                 context.RNNoiseInstance = (await WebAssembly.instantiate(await compilation, {
                     wasi_snapshot_preview1: { proc_exit: c => { } }
@@ -50,4 +66,5 @@
             }
         };
     }
+    globalThis.RNNoiseNode = node;
 })();

@@ -19,6 +19,7 @@ http.createServer((req, res) => {
             } else {
                 res.setHeader("Content-Type", {
                     html: "text/html",
+                    css: "text/css",
                     js: "text/javascript",
                     mjs: "text/javascript",
                     wasm: "application/wasm"
