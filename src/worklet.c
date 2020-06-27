@@ -1,35 +1,49 @@
 #include <emscripten.h>
 #include <stdlib.h>
-#include "../rnnoise/include/rnnoise.h"
+#include <rnnoise.h>
 
-static float buffer[1920];
-size_t input = 0;
+static float ring[1920], vad_prob = 0;
+static size_t input = 0;
+static DenoiseState *state;
 
-float *EMSCRIPTEN_KEEPALIVE getInput() { return &buffer[input]; }
+float *EMSCRIPTEN_KEEPALIVE getInput() { return &ring[input]; }
 
-void run(float *const ptr)
-{
-    // TODO: process
-}
+float EMSCRIPTEN_KEEPALIVE getVadProb() { return vad_prob; }
 
 float *EMSCRIPTEN_KEEPALIVE transform()
 {
-    float *const i = &buffer[input], *const o = &buffer[(input + 1408) % 1920];
+    input += 128;
+    input %= 1920;
+    size_t p;
     switch (input)
     {
-    case 0:
-    case 512:
-    case 1024:
-    case 1536:
-        run(o);
+    case 128:
+        p = 1440;
         break;
+    case 512:
+        p = 0;
+        break;
+    case 1024:
+        p = 480;
+        break;
+    case 1536:
+        p = 960;
+        break;
+    default:
+        goto Buffer;
     }
-    if ((input += 128) == 1920)
-        input = 0;
-    return o;
+    float *const o = &ring[p];
+    for (size_t i = 0; i < 480; ++i)
+        o[i] *= 32768;
+    vad_prob = rnnoise_process_frame(state, o, o);
+    for (size_t i = 0; i < 480; ++i)
+        o[i] /= 32768;
+Buffer:
+    return &ring[(input + 1280) % 1920];
 }
 
 int main()
 {
+    state = rnnoise_create(NULL);
     return 0;
 }

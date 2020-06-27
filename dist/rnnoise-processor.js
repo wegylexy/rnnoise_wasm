@@ -7,16 +7,13 @@ registerProcessor("rnnoise", class extends AudioWorkletProcessor {
             outputChannelCount: [1]
         });
         Object.assign(this, new WebAssembly.Instance(options.processorOptions.module, {
-            env: {
-                memory: this._memory = new WebAssembly.Memory({ initial: 256 }),
-                table: this._table = new WebAssembly.Table({
-                    initial: 0,
-                    element: "anyfunc"
-                })
-            },
             wasi_snapshot_preview1: { proc_exit: c => { } }
         }).exports);
-        this._heapFloat32 = new Float32Array(this._memory.buffer);
+        this._heapFloat32 = new Float32Array(this.memory.buffer);
+        try { this._start(); } catch (e) { }
+        this.port.onmessage = () => {
+            this.port.postMessage({ vadProb: this.getVadProb() });
+        };
     }
 
     process(input, output, parameters) {

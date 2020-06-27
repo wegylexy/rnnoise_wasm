@@ -8,7 +8,7 @@ http.createServer((req, res) => {
     const pathname = path.join(__dirname, "..", path.normalize(url.parse(req.url).pathname).replace(/^(\.\.[\/\\])+/, ""));
     fs.exists(pathname, exist => {
         if (!exist || fs.statSync(pathname).isDirectory()) {
-            res.writeHead(302, { "Location": "/demo/rnnoise.html" });
+            res.writeHead(302, { "Location": "/demo/index.html" });
             res.end();
             return;
         }

@@ -3,16 +3,23 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>RNNoise</title>
+    <title>RNNoise for WASM Demo</title>
 </head>
 
 <body>
     <select id="input" disabled></select>
     <button id="start" disabled>Start</button>
+    <progress id="vadProb" max="1" value="0"></progress>
     <script src="../dist/rnnoise-runtime.js"></script>
     <script src="rnnoise.js"></script>
     <hr>
-    <a href="https://caniuse.com/#feat=mdn-api_audioworklet" target="_blank">Can I use <i>Audio Worklet API</i>?</a>
+    <a href="https://caniuse.com/#feat=mdn-api_audioworklet" target="_blank">
+        Can I use <b>AudioWorklet API</b>?
+    </a>
+    <br>
+    <a href="https://caniuse.com/#feat=mdn-api_scriptprocessornode" target="_blank">
+        Can I use <b>ScriptProcessorNode API</b>?
+    </a>
 </body>
 
 </html>
