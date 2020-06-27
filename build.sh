@@ -1,6 +1,7 @@
 mkdir -p dist && \
 emcc \
 -s ENVIRONMENT=worker \
+--no-entry \
 -O3 -g0 \
 -o dist/rnnoise-processor.wasm \
 -Irnnoise/include \

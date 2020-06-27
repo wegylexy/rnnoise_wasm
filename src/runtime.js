@@ -27,17 +27,18 @@
         };
     } else if (globalThis.ScriptProcessorNode) {
         globalThis.RNNoiseNode = function (context) {
-            const size = 256, processor = context.createScriptProcessor(size, 1, 1),
+            const size = 16384, processor = context.createScriptProcessor(size, 1, 1),
                 instance = context.RNNoiseInstance,
                 heapFloat32 = new Float32Array(instance.memory.buffer);
-            try { instance._start(); } catch (e) { }
+            let input = instance.buffer(0);
+            instance.reset();
             processor.onaudioprocess = ({ inputBuffer, outputBuffer }) => {
-                const input = inputBuffer.getChannelData(0), output = outputBuffer.getChannelData(0);
-                for (let i = 0; i < size; i += 128) {
-                    heapFloat32.set(input.subarray(i, i + 128), instance.getInput() / 4);
-                    let ptr4 = instance.transform() / 4;
-                    output.set(heapFloat32.subarray(ptr4, ptr4 + 128), i);
-                }
+                const i = inputBuffer.getChannelData(0), o = outputBuffer.getChannelData(0);
+                heapFloat32.set(i, input / 4);
+                input = instance.buffer(i.length);
+                const ptr4 = instance.render(o.length) / 4;
+                if (ptr4)
+                    o.set(heapFloat32.subarray(ptr4, ptr4 + o.length));
             };
             return processor;
         };

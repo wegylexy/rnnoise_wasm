@@ -2,48 +2,58 @@
 #include <stdlib.h>
 #include <rnnoise.h>
 
-static float ring[1920], vad_prob = 0;
-static size_t input = 0;
-static DenoiseState *state;
-
-float *EMSCRIPTEN_KEEPALIVE getInput() { return &ring[input]; }
+static const float scale = 32768;
+static float inputBuffer[32768], outputBuffer[32768], vad_prob = 0;
+static size_t input = 0, processed = 0, buffered = 0, output = 0, max_latency = 0, latency;
+static DenoiseState *state = NULL;
 
 float EMSCRIPTEN_KEEPALIVE getVadProb() { return vad_prob; }
 
-float *EMSCRIPTEN_KEEPALIVE transform()
+float *EMSCRIPTEN_KEEPALIVE buffer(size_t length)
 {
-    input += 128;
-    input %= 1920;
-    size_t p;
-    switch (input)
+    if (length > max_latency)
+        latency = max_latency = (480 / length + (480 % length ? 1 : 0)) * length;
+    if (output && buffered > 16384)
     {
-    case 128:
-        p = 1440;
-        break;
-    case 512:
-        p = 0;
-        break;
-    case 1024:
-        p = 480;
-        break;
-    case 1536:
-        p = 960;
-        break;
-    default:
-        goto Buffer;
+        size_t d = buffered - output;
+        for (size_t i = 0; i < d; ++i)
+            outputBuffer[i] = outputBuffer[output + i];
+        output = 0;
+        buffered = d;
     }
-    float *const o = &ring[p];
-    for (size_t i = 0; i < 480; ++i)
-        o[i] *= 32768;
-    vad_prob = rnnoise_process_frame(state, o, o);
-    for (size_t i = 0; i < 480; ++i)
-        o[i] /= 32768;
-Buffer:
-    return &ring[(input + 1280) % 1920];
+    for (size_t end = input + length; input < end; ++input)
+        inputBuffer[input] *= scale;
+    while (processed + 480 <= input)
+    {
+        vad_prob = rnnoise_process_frame(state, &outputBuffer[buffered], &inputBuffer[processed]);
+        processed += 480;
+        buffered += 480;
+    }
+    if (processed && input > 16384)
+    {
+        size_t d = input - processed;
+        for (size_t i = 0; i < d; ++i)
+            inputBuffer[i] = inputBuffer[processed + i];
+        processed = 0;
+        input = d;
+    }
+    return &inputBuffer[input];
 }
 
-int main()
+float *EMSCRIPTEN_KEEPALIVE render(size_t length)
 {
+    if (output + latency > buffered)
+        return NULL;
+    latency = length;
+    float *const o = &outputBuffer[output];
+    for (size_t end = output + length; output < end; ++output)
+        outputBuffer[output] /= scale;
+    return o;
+}
+
+void EMSCRIPTEN_KEEPALIVE reset()
+{
+    if (state)
+        rnnoise_destroy(state);
     state = rnnoise_create(NULL);
-    return 0;
 }

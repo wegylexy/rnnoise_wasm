@@ -10,16 +10,20 @@ registerProcessor("rnnoise", class extends AudioWorkletProcessor {
             wasi_snapshot_preview1: { proc_exit: c => { } }
         }).exports);
         this._heapFloat32 = new Float32Array(this.memory.buffer);
-        try { this._start(); } catch (e) { }
+        this.reset();
+        this._input = this.buffer(0);
         this.port.onmessage = () => {
             this.port.postMessage({ vadProb: this.getVadProb() });
         };
     }
 
     process(input, output, parameters) {
-        this._heapFloat32.set(input[0][0], this.getInput() / 4);
-        const ptr4 = this.transform() / 4;
-        output[0][0].set(this._heapFloat32.subarray(ptr4, ptr4 + 128));
+        const i = input[0][0], o = output[0][0];
+        this._heapFloat32.set(i, this._input / 4);
+        this._input = this.buffer(i.length);
+        const ptr4 = this.render(o.length) / 4;
+        if (ptr4)
+            o.set(this._heapFloat32.subarray(ptr4, ptr4 + o.length));
         return true;
     }
 });
