@@ -1,4 +1,8 @@
-if (navigator.mediaDevices && (window.AudioWorkletNode || window.ScriptProcessorNode)) {
+if (navigator.mediaDevices &&
+    (window.AudioContext || (window.AudioContext = window.webkitAudioContext)) &&
+    (window.AudioWorkletNode || window.ScriptProcessorNode) &&
+    AudioContext.prototype.createMediaStreamSource
+) {
     switch (location.protocol) {
         case "http:":
         case "https:":
@@ -28,7 +32,7 @@ if (navigator.mediaDevices && (window.AudioWorkletNode || window.ScriptProcessor
                                     deviceId: { exact: input.value },
                                     channelCount: { ideal: 1 },
                                     noiseSuppression: { ideal: false },
-                                    echoCancellation: { ideal: false },
+                                    echoCancellation: { ideal: true },
                                     autoGainControl: { ideal: false },
                                     sampleRate: { ideal: 48000 }
                                 }

@@ -1,8 +1,8 @@
 (function () {
     const base = document.currentScript.src.match(/(.*\/)?/)[0],
-        compilation = WebAssembly.compileStreaming(fetch(base + "rnnoise-processor.wasm"));
+        compilation = (WebAssembly.compileStreaming || (async f => await WebAssembly.compile(await (await f).arrayBuffer())))(fetch(base + "rnnoise-processor.wasm"));
     let node;
-    if (window.AudioWorkletNode) {
+    if (window.AudioWorkletNode || (window.AudioWorkletNode = window.webkitAudioWorkletNode)) {
         node = class extends AudioWorkletNode {
             static async register(context) {
                 if (!context.RNNoiseModule) {
@@ -33,7 +33,7 @@
 
             update() { this.port.postMessage({}); }
         };
-    } else if (window.ScriptProcessorNode) {
+    } else if (window.ScriptProcessorNode || (window.ScriptProcessorNode = window.webkitScriptProcessorNode)) {
         node = function (context) {
             const size = 512, processor = context.createScriptProcessor(size, 1, 1),
                 instance = context.RNNoiseInstance,
