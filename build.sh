@@ -1,4 +1,4 @@
-set -euf -o pipefail
+set -eu -o pipefail
 mkdir -p dist && \
 /emsdk/node/*/bin/node /emsdk/upstream/emscripten/node_modules/.bin/google-closure-compiler \
     --language_in ECMASCRIPT_NEXT \

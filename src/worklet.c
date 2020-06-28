@@ -4,15 +4,19 @@
 
 static const float scale = 32768;
 static float inputBuffer[32768], outputBuffer[32768], vad_prob = 0;
-static size_t input = 0, processed = 0, buffered = 0, output = 0, max_latency = 0, latency;
+static size_t input = 0, processed = 0, buffered = 0, output = 0, buffering = 0, latency;
 static DenoiseState *state = NULL;
+
+float *EMSCRIPTEN_KEEPALIVE getInput() { return &inputBuffer[input]; }
 
 float EMSCRIPTEN_KEEPALIVE getVadProb() { return vad_prob; }
 
-float *EMSCRIPTEN_KEEPALIVE buffer(size_t length)
+float *EMSCRIPTEN_KEEPALIVE pipe(size_t length)
 {
-    if (length > max_latency)
-        latency = max_latency = (480 / length + (480 % length ? 1 : 0)) * length;
+    // Increases latency
+    if (length > buffering)
+        latency = buffering = (480 / length + (480 % length ? 1 : 0)) * length;
+    // Shifts output
     if (output && buffered > 16384)
     {
         size_t d = buffered - output;
@@ -21,14 +25,17 @@ float *EMSCRIPTEN_KEEPALIVE buffer(size_t length)
         output = 0;
         buffered = d;
     }
+    // Scales input
     for (size_t end = input + length; input < end; ++input)
         inputBuffer[input] *= scale;
+    // Buffers input
     while (processed + 480 <= input)
     {
         vad_prob = rnnoise_process_frame(state, &outputBuffer[buffered], &inputBuffer[processed]);
         processed += 480;
         buffered += 480;
     }
+    // Shifts input
     if (processed && input > 16384)
     {
         size_t d = input - processed;
@@ -37,18 +44,15 @@ float *EMSCRIPTEN_KEEPALIVE buffer(size_t length)
         processed = 0;
         input = d;
     }
-    return &inputBuffer[input];
-}
-
-float *EMSCRIPTEN_KEEPALIVE render(size_t length)
-{
+    // Flushes output
     if (output + latency > buffered)
         return NULL;
     latency = length;
-    float *const o = &outputBuffer[output];
+    size_t o = output;
+    // Scales output
     for (size_t end = output + length; output < end; ++output)
         outputBuffer[output] /= scale;
-    return o;
+    return &outputBuffer[o];
 }
 
 void EMSCRIPTEN_KEEPALIVE reset()

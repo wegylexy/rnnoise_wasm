@@ -38,13 +38,10 @@
             const size = 512, processor = context.createScriptProcessor(size, 1, 1),
                 instance = context.RNNoiseInstance,
                 heapFloat32 = new Float32Array(instance.memory.buffer);
-            let input = instance.buffer(0);
             instance.reset();
             processor.onaudioprocess = ({ inputBuffer, outputBuffer }) => {
-                const i = inputBuffer.getChannelData(0), o = outputBuffer.getChannelData(0);
-                heapFloat32.set(i, input / 4);
-                input = instance.buffer(i.length);
-                const ptr4 = instance.render(o.length) / 4;
+                heapFloat32.set(inputBuffer.getChannelData(0), instance.getInput() / 4);
+                const o = outputBuffer.getChannelData(0), ptr4 = instance.pipe(o.length) / 4;
                 if (ptr4)
                     o.set(heapFloat32.subarray(ptr4, ptr4 + o.length));
             };
