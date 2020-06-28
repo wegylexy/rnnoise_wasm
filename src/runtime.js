@@ -59,11 +59,8 @@
             return processor;
         };
         node.register = async (context) => {
-            if (!context.RNNoiseInstance) {
-                context.RNNoiseInstance = (await WebAssembly.instantiate(await compilation, {
-                    wasi_snapshot_preview1: { proc_exit: c => { } }
-                })).exports;
-            }
+            if (!context.RNNoiseInstance)
+                context.RNNoiseInstance = (await WebAssembly.instantiate(await compilation)).exports;
         };
     }
     window.RNNoiseNode = node;

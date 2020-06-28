@@ -6,9 +6,7 @@ registerProcessor("rnnoise", class extends AudioWorkletProcessor {
             numberOfOutputs: 1,
             outputChannelCount: [1]
         });
-        Object.assign(this, new WebAssembly.Instance(options.processorOptions.module, {
-            wasi_snapshot_preview1: { proc_exit: c => { } }
-        }).exports);
+        Object.assign(this, new WebAssembly.Instance(options.processorOptions.module).exports);
         this._heapFloat32 = new Float32Array(this.memory.buffer);
         this.reset();
         this._input = this.buffer(0);

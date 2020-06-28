@@ -19,7 +19,7 @@ if (navigator.mediaDevices && (window.AudioWorkletNode || window.ScriptProcessor
                 });
                 input.disabled = false;
                 start.addEventListener("click", async () => {
-                    start.disabled = true;
+                    start.disabled = input.disabled = true;
                     const context = new AudioContext({ sampleRate: 48000 });
                     try {
                         const [stream] = await Promise.all([
@@ -39,7 +39,7 @@ if (navigator.mediaDevices && (window.AudioWorkletNode || window.ScriptProcessor
                             rnnoise = new RNNoiseNode(context);
                         rnnoise.connect(context.destination);
                         source.connect(rnnoise);
-                        rnnoise.onstatus = data => { vadProb.value = data.vadProb; };
+                        rnnoise.onstatus = data => { vadProb.style.width = data.vadProb * 100 + "%"; };
                         (function a() {
                             requestAnimationFrame(() => {
                                 rnnoise.update();
