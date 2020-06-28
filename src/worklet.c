@@ -6,7 +6,7 @@
 #define MAX_FRAME_SIZE 16384
 
 static const float scale = -INT16_MIN;
-static float inputBuffer[MAX_FRAME_SIZE * 2], outputBuffer[MAX_FRAME_SIZE * 2], vad_prob = 0;
+static float inputBuffer[MAX_FRAME_SIZE * 2], outputBuffer[MAX_FRAME_SIZE * 2], vad_prob;
 static size_t input = 0, processed = 0, buffered = 0, output = 0, buffering = 0, latency;
 static DenoiseState *state = NULL;
 
@@ -62,5 +62,6 @@ void EMSCRIPTEN_KEEPALIVE reset()
 {
     if (state)
         rnnoise_destroy(state);
+    vad_prob = 0;
     state = rnnoise_create(NULL);
 }
