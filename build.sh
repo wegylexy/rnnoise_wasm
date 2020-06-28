@@ -12,8 +12,7 @@ mkdir -p dist && \
     src/processor.js && \
 emcc \
     -s ENVIRONMENT=worker \
-    --no-entry \
-    -O3 -g0 \
+    -g0 -O3 --no-entry -Wno-null-dereference \
     -o dist/rnnoise-processor.wasm \
     -Irnnoise/include \
     rnnoise/src/celt_lpc.c \
