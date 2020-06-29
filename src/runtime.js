@@ -1,16 +1,7 @@
 (function () {
-    const s = document.currentScript, base = s.src.match(/(.*\/)?/)[0], wasm = window.WebAssembly,
-        compilation = wasm && (wasm.compileStreaming || (async f => await wasm.compile(await (await f).arrayBuffer())))(fetch(base + "rnnoise-processor.wasm"));
-    if (!wasm) {
-        Object.assign(window, {
-            asmLibraryArg: {},
-            wasmMemory: { buffer: new ArrayBuffer(0x70000) },
-            wasmTable: undefined,
-            wasmBinary: undefined
-        });
-        s.parentElement.insertBefore(Object.assign(document.createElement("script"), { src: base + "rnnoise-processor.wasm.js" }), s.nextSibling);
-    }
-    window.RNNoiseNode = wasm && (window.AudioWorkletNode || (window.AudioWorkletNode = window.webkitAudioWorkletNode)) &&
+    const base = document.currentScript.src.match(/(.*\/)?/)[0],
+        compilation = (WebAssembly.compileStreaming || (async f => await WebAssembly.compile(await (await f).arrayBuffer())))(fetch(base + "rnnoise-processor.wasm"));
+    window.RNNoiseNode = (window.AudioWorkletNode || (window.AudioWorkletNode = window.webkitAudioWorkletNode)) &&
         class extends AudioWorkletNode {
             static async register(context) {
                 if (!context.RNNoiseModule) {
@@ -64,10 +55,8 @@
             return processor;
         }, {
             register: async (context) => {
-                if (!context.RNNoiseInstance) {
-                    const instance = await WebAssembly.instantiate(await compilation);
-                    context.RNNoiseInstance = instance.exports || instance.instance.exports;
-                }
+                if (!context.RNNoiseInstance)
+                    context.RNNoiseInstance = (await WebAssembly.instantiate(await compilation)).exports;
             }
         });
 })();

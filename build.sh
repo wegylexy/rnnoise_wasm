@@ -12,7 +12,6 @@ mkdir -p dist
     src/processor.js
 emcc \
     -s ENVIRONMENT=worker \
-    -s WASM=2 --memory-init-file 0 \
     -s TOTAL_STACK=30720 -s TOTAL_MEMORY=458752 \
     -g0 -O3 --no-entry -Wno-null-dereference \
     -o dist/rnnoise-processor.wasm \
@@ -24,9 +23,3 @@ emcc \
     rnnoise/src/rnn.c \
     rnnoise/src/rnn_data.c \
     src/worklet.c
-/emsdk/node/*/bin/node /emsdk/upstream/emscripten/node_modules/.bin/google-closure-compiler \
-    --language_in ECMASCRIPT_NEXT \
-    --language_out ECMASCRIPT_2018 \
-    --js_output_file dist/rnnoise-processor.wasm.js \
-    -W QUIET \
-    < dist/rnnoise-processor.wasm.js
