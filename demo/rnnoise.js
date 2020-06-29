@@ -11,21 +11,45 @@ if (navigator.mediaDevices &&
                 return navigator.mediaDevices.enumerateDevices();
             }).then(devices => {
                 const input = document.getElementById("input"),
+                    output = document.getElementById("output"),
                     start = document.getElementById("start"),
-                    vadProb = document.getElementById("vadProb");
-                devices.forEach(d => {
-                    if (d.kind == "audioinput") {
-                        const o = document.createElement("option");
-                        o.value = d.deviceId;
-                        o.textContent = d.label;
-                        input.appendChild(o);
-                    }
-                });
+                    vadProb = document.getElementById("vadProb"),
+                    sink = Audio.prototype.setSinkId;
                 input.disabled = false;
+                if (sink)
+                    output.disabled = false;
+                else
+                    devices = devices.filter(d => d.kind == "audioinput").concat({
+                        kind: "audiooutput",
+                        label: "Default"
+                    });
+                devices.forEach(d => {
+                    if (d.kind == "audioinput")
+                        input.appendChild(Object.assign(document.createElement("option"), {
+                            value: d.deviceId,
+                            textContent: d.label
+                        }));
+                    else if (d.kind == "audiooutput")
+                        output.appendChild(Object.assign(document.createElement("option"), {
+                            value: d.deviceId,
+                            textContent: d.label
+                        }));
+                });
                 start.addEventListener("click", async () => {
-                    start.disabled = input.disabled = true;
+                    start.disabled = output.disabled = input.disabled = true;
                     const context = new AudioContext({ sampleRate: 48000 });
                     try {
+                        const destination = sink ? new MediaStreamAudioDestinationNode(context, {
+                            channelCountMode: "explicit",
+                            channelCount: 1,
+                            channelInterpretation: "speakers"
+                        }) : context.destination;
+                        if (sink) {
+                            const audio = new Audio();
+                            audio.setSinkId(output.value);
+                            audio.srcObject = destination.stream;
+                            audio.play();
+                        }
                         const [stream] = await Promise.all([
                             navigator.mediaDevices.getUserMedia({
                                 audio: {
@@ -38,10 +62,9 @@ if (navigator.mediaDevices &&
                                 }
                             }),
                             RNNoiseNode.register(context)
-                        ]);
-                        const source = context.createMediaStreamSource(stream),
+                        ]), source = context.createMediaStreamSource(stream),
                             rnnoise = new RNNoiseNode(context);
-                        rnnoise.connect(context.destination);
+                        rnnoise.connect(destination);
                         source.connect(rnnoise);
                         rnnoise.onstatus = data => { vadProb.style.width = data.vadProb * 100 + "%"; };
                         (function a() {

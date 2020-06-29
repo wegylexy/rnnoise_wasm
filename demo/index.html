@@ -11,12 +11,21 @@
 <body>
     <fieldset>
         <legend>Setup</legend>
-        <select id="input" disabled></select>
+        <table>
+            <tr>
+                <td>Input</td>
+                <td><select id="input" disabled></select></td>
+            </tr>
+            <tr>
+                <td>Output</td>
+                <td><select id="output" disabled></select></td>
+            </tr>
+        </table>
         <button id="start" disabled>Start</button>
     </fieldset>
     <fieldset>
         <legend>Status</legend>
-        <table>
+        <table class="full">
             <tr>
                 <td>Voice Activity</td>
                 <td class="full"><div id="vadProb"></div></td>
