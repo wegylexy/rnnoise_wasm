@@ -4,7 +4,7 @@
     if (!wasm) {
         Object.assign(window, {
             asmLibraryArg: {},
-            wasmMemory: { buffer: new ArrayBuffer(16777216) },
+            wasmMemory: { buffer: new ArrayBuffer(0x70000) },
             wasmTable: undefined,
             wasmBinary: undefined
         });

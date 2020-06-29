@@ -13,6 +13,7 @@ mkdir -p dist
 emcc \
     -s ENVIRONMENT=worker \
     -s WASM=2 --memory-init-file 0 \
+    -s TOTAL_STACK=30720 -s TOTAL_MEMORY=458752 \
     -g0 -O3 --no-entry -Wno-null-dereference \
     -o dist/rnnoise-processor.wasm \
     -Irnnoise/include \
