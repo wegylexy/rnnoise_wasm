@@ -12,7 +12,7 @@ mkdir -p dist
     src/processor.js
 emcc \
     -s ENVIRONMENT=worker \
-    -s TOTAL_STACK=30720 -s TOTAL_MEMORY=393216 \
+    -s TOTAL_STACK=49152 -s TOTAL_MEMORY=327680 \
     -g0 -O3 --no-entry -Wno-null-dereference \
     -o dist/rnnoise-processor.wasm \
     -Irnnoise/include \
