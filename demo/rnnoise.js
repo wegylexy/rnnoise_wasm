@@ -69,7 +69,7 @@ if (navigator.mediaDevices &&
                         rnnoise.onstatus = data => { vadProb.style.width = data.vadProb * 100 + "%"; };
                         (function a() {
                             requestAnimationFrame(() => {
-                                rnnoise.update();
+                                rnnoise.update(true);
                                 a();
                             });
                         })();

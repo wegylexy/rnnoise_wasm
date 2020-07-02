@@ -7,53 +7,63 @@
 #define MAX_FRAME_SIZE 16384
 
 static const float scale = -INT16_MIN;
-static float buffer[MAX_FRAME_SIZE * 2], vad_prob;
-static size_t input, processed, output, buffering, latency;
-static DenoiseState *state = NULL;
 
-float *EMSCRIPTEN_KEEPALIVE getInput()
+struct State
+{
+    float buffer[MAX_FRAME_SIZE * 2], vad_prob;
+    size_t input, processed, output, buffering, latency;
+    DenoiseState *state;
+};
+
+struct State *EMSCRIPTEN_KEEPALIVE newState()
+{
+    struct State *s = malloc(sizeof(struct State));
+    s->vad_prob = s->latency = s->buffering = s->output = s->processed = s->input = 0;
+    s->state = rnnoise_create(NULL);
+    return s;
+}
+
+void EMSCRIPTEN_KEEPALIVE deleteState(struct State *const state)
+{
+    rnnoise_destroy(state->state);
+    free(state);
+}
+
+float *EMSCRIPTEN_KEEPALIVE getInput(struct State *const state)
 {
     // Shifts
-    if (output && input > MAX_FRAME_SIZE)
+    if (state->output && state->input > MAX_FRAME_SIZE)
     {
-        memmove(buffer, &buffer[output], sizeof(float) * (input -= output));
-        processed -= output;
-        output = 0;
+        memmove(state->buffer, &state->buffer[state->output], sizeof(float) * (state->input -= state->output));
+        state->processed -= state->output;
+        state->output = 0;
     }
-    return &buffer[input];
+    return &state->buffer[state->input];
 }
 
-float EMSCRIPTEN_KEEPALIVE getVadProb() { return vad_prob; }
+float EMSCRIPTEN_KEEPALIVE getVadProb(const struct State *const state) { return state->vad_prob; }
 
-float *EMSCRIPTEN_KEEPALIVE pipe(size_t length)
+float *EMSCRIPTEN_KEEPALIVE pipe(struct State *const state, size_t length)
 {
     // Increases latency
-    if (length > buffering)
-        latency = buffering = (FRAME_SIZE / length + (FRAME_SIZE % length ? 1 : 0)) * length;
+    if (length > state->buffering)
+        state->latency = state->buffering = (FRAME_SIZE / length + (FRAME_SIZE % length ? 1 : 0)) * length;
     // Scales input
-    for (size_t end = input + length; input < end; ++input)
-        buffer[input] *= scale;
+    for (size_t end = state->input + length; state->input < end; ++state->input)
+        state->buffer[state->input] *= scale;
     // Processes
-    while (processed + FRAME_SIZE <= input)
+    while (state->processed + FRAME_SIZE <= state->input)
     {
-        vad_prob = rnnoise_process_frame(state, &buffer[processed], &buffer[processed]);
-        processed += FRAME_SIZE;
+        state->vad_prob = rnnoise_process_frame(state->state, &state->buffer[state->processed], &state->buffer[state->processed]);
+        state->processed += FRAME_SIZE;
     }
     // Buffers
-    if (output + latency > processed)
+    if (state->output + state->latency > state->processed)
         return NULL;
-    latency = length;
-    size_t o = output;
+    state->latency = length;
+    size_t o = state->output;
     // Scales output
-    for (size_t end = output + length; output < end; ++output)
-        buffer[output] /= scale;
-    return &buffer[o];
-}
-
-void EMSCRIPTEN_KEEPALIVE reset()
-{
-    if (state)
-        rnnoise_destroy(state);
-    vad_prob = latency = buffering = output = processed = input = 0;
-    state = rnnoise_create(NULL);
+    for (size_t end = state->output + length; state->output < end; ++state->output)
+        state->buffer[state->output] /= scale;
+    return &state->buffer[o];
 }
