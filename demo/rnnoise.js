@@ -46,8 +46,8 @@ if (navigator.mediaDevices &&
                         }) : context.destination;
                         if (sink) {
                             const audio = new Audio();
-                            audio.setSinkId(output.value);
                             audio.srcObject = destination.stream;
+                            audio.setSinkId(output.value);
                             audio.play();
                         }
                         const [stream] = await Promise.all([
